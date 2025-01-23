@@ -1,0 +1,18 @@
+const mongoose = require('mongoose');
+
+const AuctionSchema = new mongoose.Schema({
+    userId: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
+    url: String,
+    maxBid: Number,
+    logs: [String],
+    isStopped: {
+        type: Boolean,
+        default: false
+    },
+    isDone: {
+        type: Boolean,
+        default: false
+    }
+});
+
+module.exports = mongoose.model('Auction', AuctionSchema);
