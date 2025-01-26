@@ -127,10 +127,9 @@ router.get('/getAuction/:auctionid', authenticate, csrfCheck, adminCheck, async 
     }
 });
 
-router.post('/manageAuction/:auctionid', authenticate, csrfCheck, adminCheck, async (req, res) => {
+router.post('/manageAuction', authenticate, csrfCheck, adminCheck, async (req, res) => {
     try {
-        const auctionid = req.params.auctionid;
-        let { url, maxBid, isStopped } = req.body;
+        let { auctionid, url, maxBid, isStopped } = req.body;
         const auction = await Auction.findOne({ _id: auctionid, userId: req.session.userId });
         if (!auction) {
             return res.status(400).json({

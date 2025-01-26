@@ -68,7 +68,7 @@ const updateAuctionData = async (responseBody) => {
         parentPort.postMessage({ op: 3, value: 'Maksimum fiyat aşıldı, dinleme durduruluyor.' });
     }
 
-    parentPort.postMessage({ op: 2, value: 'Güncellenen İhale Verileri: ' + JSON.stringify(auctionData) });
+    parentPort.postMessage({ op: 0, value: auctionData });
 };
 
 const placeBid = async (page, bidAmount) => {

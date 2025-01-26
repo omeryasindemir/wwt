@@ -4,6 +4,8 @@ const AuctionSchema = new mongoose.Schema({
     userId: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
     url: String,
     maxBid: Number,
+    lastBid: Number,
+    endTime: Date,
     logs: [String],
     isStopped: {
         type: Boolean,

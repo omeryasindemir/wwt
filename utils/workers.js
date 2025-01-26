@@ -44,6 +44,9 @@ const createAuctionWorker = async (auctionid) => {
     auctionWorker.on('message', async (data) => {
         try {
             switch (data.op) {
+                case 0:
+                    await Auction.updateOne({ _id: auctionid }, { lastBid: data.value.lastOffer, endTime: data.value.endTime });
+                    break;
                 case 1:
                     await Auction.updateOne({ _id: auctionid }, { $push: { logs: `[${new Date().toLocaleString()}][HATA] ${data.value}` } });
                     break;

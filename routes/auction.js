@@ -88,9 +88,15 @@ router.post('/manage/:auctionid', authenticate, csrfCheck, async (req, res) => {
                 });
             }
             auction.maxBid = maxBid;
-            await auction.save();
 
-            await updateAuctionDetails(req.session.userId, auction._id, maxBid);
+            if (auction.isStopped) {
+                await createAuctionWorker(auction._id);
+                auction.isStopped = false;
+            } else {
+                await updateAuctionDetails(req.session.userId, auction._id, maxBid);
+            }
+
+            await auction.save();
         }
 
         res.json({});
