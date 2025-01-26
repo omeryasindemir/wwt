@@ -88,58 +88,65 @@ const placeBid = async (page, bidAmount) => {
     parentPort.postMessage({ op: 2, value: 'Sunucu yanıtı: ' + JSON.stringify(response) });
 };
 
+const waitforCookie = async () => {
+    while (currentJSessionId === '') {
+        await new Promise(resolve => setTimeout(resolve, 4000));
+    }
+    return;
+};
+
 (async () => {
-if (!isMainThread) {
-    listeningUrl = workerData.url;
-    maxPrice = workerData.maxBid;
+    if (!isMainThread) {
+        listeningUrl = workerData.url;
+        maxPrice = workerData.maxBid;
 
-    const browser = await puppeteer.launch({ headless: true });
-    const page = await browser.newPage();
+        const browser = await puppeteer.launch({ headless: true });
+        const page = await browser.newPage();
 
-    await updateSessionId(page, workerData.cookie);
-
-    parentPort.on('message', async (data) => {
-        switch(data.op) {
-            case 0:
-                await updateSessionId(page, data.cookie);
-                break;
-            case 1:
-                maxPrice = data.maxBid;
-                break;
-        }    
-    });
-
-    page.on('response', async (response) => {
-        if (response.url() === "https://esatis.uyap.gov.tr/main/jsp/esatis/ihale_detay_bilgileri_brd.ajx" ||
-            response.url() === "https://esatis.uyap.gov.tr/main/jsp/esatis/ihale_detay_bilgileri_ozet_brd.ajx") {
-            const responseBody = await response.text();
-            await updateAuctionData(responseBody);
-        }
-    });
-
-    await page.goto(listeningUrl, { waitUntil: 'networkidle2' });
-
-    parentPort.postMessage({ op: 2, value: 'Dinleme başladı...' });
-    const interval = setInterval(async () => {
-        if (auctionData.endTime) {
-            const remainingTime = calculateRemainingTime(auctionData.endTime);
-            printRemainingTime(remainingTime);
-            if (remainingTime.totalSeconds === 0) {
-                parentPort.postMessage({ op: 4, value: 'İhale bitti.' });
+        parentPort.on('message', async (data) => {
+            switch (data.op) {
+                case 0:
+                    await updateSessionId(page, data.cookie);
+                    break;
+                case 1:
+                    maxPrice = data.maxBid;
+                    break;
             }
+        });
 
-            if (remainingTime.totalSeconds <= 5) {
-                const nextBid = auctionData.lastOffer + auctionData.minIncrement;
+        await waitforCookie();
 
-                if (auctionData.lastOffer === lastPlacedBid) {
-                    parentPort.postMessage({ op: 2, value: 'Son teklif bizim verdiğimiz teklif, tekrar teklif verilmiyor.' });
-                } else if (nextBid <= maxPrice) {
-                    await placeBid(page, nextBid);
-                } else {
-                    parentPort.postMessage({ op: 3, value: 'Maksimum fiyat aşıldı, dinleme durduruluyor.' });
+        page.on('response', async (response) => {
+            if (response.url() === "https://esatis.uyap.gov.tr/main/jsp/esatis/ihale_detay_bilgileri_brd.ajx" ||
+                response.url() === "https://esatis.uyap.gov.tr/main/jsp/esatis/ihale_detay_bilgileri_ozet_brd.ajx") {
+                const responseBody = await response.text();
+                await updateAuctionData(responseBody);
+            }
+        });
+
+        await page.goto(listeningUrl, { waitUntil: 'networkidle2' });
+
+        parentPort.postMessage({ op: 2, value: 'Dinleme başladı...' });
+        const interval = setInterval(async () => {
+            if (auctionData.endTime) {
+                const remainingTime = calculateRemainingTime(auctionData.endTime);
+                printRemainingTime(remainingTime);
+                if (remainingTime.totalSeconds === 0) {
+                    parentPort.postMessage({ op: 4, value: 'İhale bitti.' });
+                }
+
+                if (remainingTime.totalSeconds <= 5) {
+                    const nextBid = auctionData.lastOffer + auctionData.minIncrement;
+
+                    if (auctionData.lastOffer === lastPlacedBid) {
+                        parentPort.postMessage({ op: 2, value: 'Son teklif bizim verdiğimiz teklif, tekrar teklif verilmiyor.' });
+                    } else if (nextBid <= maxPrice) {
+                        await placeBid(page, nextBid);
+                    } else {
+                        parentPort.postMessage({ op: 3, value: 'Maksimum fiyat aşıldı, dinleme durduruluyor.' });
+                    }
                 }
             }
-        }
-    }, 1000);
-}
+        }, 1000);
+    }
 })();

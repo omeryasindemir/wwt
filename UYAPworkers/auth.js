@@ -54,47 +54,47 @@ const makeAuthenticatedRequest = async (cookieValue) => {
 
 // Ana işlem
 (async () => {
-if (!isMainThread) {
-    try {
-        let { tckn, password, cookie } = workerData;
+    if (!isMainThread) {
+        try {
+            let { tckn, password, cookie } = workerData;
 
-        let isAuthenticated = false;
+            let isAuthenticated = false;
 
-        // Oturum geçerliliğini kontrol eden fonksiyon
-        const checkSessionValidity = async () => {
-            parentPort.postMessage({ op: 2, value: 'Cookie işlemleri başlatıldı.' });
-            while (true) {
-                // Oturum geçerliliğini kontrol et
-                if (cookie) {
-                    isAuthenticated = await makeAuthenticatedRequest(cookie);
-                }
-
-                // Kimlik doğrulama başarısızsa tekrar giriş yap
-                if (!isAuthenticated) {
-                    cookie = await loginAndSaveSession(tckn, password);
+            // Oturum geçerliliğini kontrol eden fonksiyon
+            const checkSessionValidity = async () => {
+                parentPort.postMessage({ op: 2, value: 'Cookie işlemleri başlatıldı.' });
+                while (true) {
+                    // Oturum geçerliliğini kontrol et
                     if (cookie) {
-                        parentPort.postMessage({ op: 0, value: cookie });
+                        isAuthenticated = await makeAuthenticatedRequest(cookie);
                     }
+
+                    // Kimlik doğrulama başarısızsa tekrar giriş yap
+                    if (!isAuthenticated) {
+                        cookie = await loginAndSaveSession(tckn, password);
+                        if (cookie) {
+                            parentPort.postMessage({ op: 0, value: cookie });
+                        }
+                    }
+
+                    // Kontrolden önce 4 saniye bekle
+                    await new Promise(resolve => setTimeout(resolve, 4000));
                 }
+            };
 
-                // Kontrolden önce 4 saniye bekle
-                await new Promise(resolve => setTimeout(resolve, 4000));
-            }
-        };
+            parentPort.on('message', (data) => {
+                switch (data.op) {
+                    case 1:
+                        tckn = data.tckn;
+                        password = data.password;
+                        break;
+                }
+            });
 
-        parentPort.on('message', (data) => {
-            switch(data.op) {
-                case 1:
-                    tckn = data.tckn;
-                    password = data.password;
-                    break;
-            }
-        });
-
-        // Oturum kontrolünü başlat
-        await checkSessionValidity();
-    } catch (error) {
-        parentPort.postMessage({ op: 1, value: error });
+            // Oturum kontrolünü başlat
+            await checkSessionValidity();
+        } catch (error) {
+            parentPort.postMessage({ op: 1, value: error });
+        }
     }
-}
 })();
