@@ -12,11 +12,23 @@ router.post('/new', authenticate, csrfCheck, async (req, res) => {
     try {
         const { url, maxBid } = req.body;
         const auctionUrl = url.trim();
-        if (auctionUrl !== '') {
+
+        const isValidUrl = (string) => {
+            try {
+                new URL(string); 
+                return true;
+            } catch {
+                return false;
+            }
+        };
+
+        if (!isValidUrl(auctionUrl)) {
             return res.status(400).json({
                 error: 'İhale linki geçersiz'
             });
         }
+
+
         if (maxBid <= 0) {
             return res.status(400).json({
                 error: 'Maksimum tutar geçersiz'

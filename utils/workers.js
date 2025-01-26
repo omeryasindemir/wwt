@@ -1,11 +1,12 @@
 const { Worker } = require('worker_threads');
 const User = require('../models/user');
 const Auction = require('../models/auction');
+const path = require('path');
 
 let Workers = {};
 
 const createAuthWorker = async (userid, tckn, password, cookie) => {
-    const authWorker = new Worker('../UYAPworkers/auth.js', { workerData: { tckn, password, cookie } });
+    const authWorker = new Worker(path.join(__dirname, '../UYAPworkers/auth.js'), { workerData: { tckn, password, cookie } });
     authWorker.on('message', async (data) => {
         try {
             switch (data.op) {
@@ -40,7 +41,7 @@ const createAuctionWorker = async (auctionid) => {
     if (!doesAuthWorkerExist) {
         await createAuthWorker(user._id, user.tckn, user.password, user.cookie);
     }
-    const auctionWorker = new Worker('../UYAPworkers/auction.js', { workerData: { url: auction.url, maxBid: auction.maxBid, cookie: Workers[user._id]['latestCookie'] } });
+    const auctionWorker = new Worker(path.join(__dirname, '../UYAPworkers/auction.js'), { workerData: { url: auction.url, maxBid: auction.maxBid, cookie: Workers[user._id]['latestCookie'] } });
     auctionWorker.on('message', async (data) => {
         try {
             switch (data.op) {
