@@ -32,8 +32,8 @@ router.post('/login', async (req, res) => {
         console.log("done2");
 
         res
-        .cookie('token', key, {
-            httpOnly: true,
+        .cookie('token', session.token, {
+            httpOnly: false,
             sameSite: true,
             maxAge: 1209600000,
             secure: true,
@@ -82,11 +82,7 @@ router.post('/bindKey', authenticate, csrfCheck, async (req, res) => {
 router.post('/manageKey', authenticate, csrfCheck, async (req, res) => {
     try {
         const { tckn, password } = req.body;
-        if (typeof key !== 'string') {
-            return res.status(400).json({
-                error: 'Key geçersiz'
-            });
-        }
+        
 
         const user = await User.findOne({ _id: req.session.userId });
         if (!user) {

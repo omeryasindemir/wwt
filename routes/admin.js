@@ -80,6 +80,7 @@ router.post('/manageKey', authenticate, csrfCheck, adminCheck, async (req, res) 
         }
 
         if (credit !== user.credit) {
+            console.log(credit);
             if (credit < 0) {
                 throw new Error("Kredi 0'dan küçük olamaz");
             }
@@ -97,6 +98,7 @@ router.post('/manageKey', authenticate, csrfCheck, adminCheck, async (req, res) 
             detail: 'Bilgiler başarıyla güncellendi'
         });
     } catch (err) {
+        console.log(err);
         res.status(401).json({
             error: err,
         });
