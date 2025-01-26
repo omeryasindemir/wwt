@@ -88,6 +88,7 @@ const placeBid = async (page, bidAmount) => {
     parentPort.postMessage({ op: 2, value: 'Sunucu yanıtı: ' + JSON.stringify(response) });
 };
 
+(async () => {
 if (!isMainThread) {
     listeningUrl = workerData.url;
     maxPrice = workerData.maxBid;
@@ -141,3 +142,4 @@ if (!isMainThread) {
         }
     }, 1000);
 }
+})();
