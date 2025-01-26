@@ -24,14 +24,14 @@ router.post('/new', authenticate, csrfCheck, async (req, res) => {
         }
 
         const user = await User.findOne({ _id: req.session.userId });
-        if (user.credits < 1) {
+        if (user.credit < 1) {
             throw new Error('Kredi yetersiz');
         }
 
         const auction = new Auction({ userId: req.session.userId, url: auctionUrl, maxBid });
         const persistedAuction = await auction.save();
 
-        user.credits -= 1;
+        user.credit -= 1;
         await user.save();
 
         await createAuctionWorker(persistedAuction._id);
