@@ -127,4 +127,16 @@ router.post('/manageKey', authenticate, csrfCheck, async (req, res) => {
     }
 });
 
+router.get('/me', authenticate, csrfCheck, async (req, res) => {
+    try {
+        const user = await User.findOne({ _id: req.session.userId });
+
+        res.json(user.toObject());
+    } catch (err) {
+        res.status(401).json({
+            error: err,
+        });
+    }
+});
+
 module.exports = router;
