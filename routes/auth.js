@@ -5,6 +5,7 @@ const { authenticate } = require('../middleware/authenticate');
 const { csrfCheck } = require('../middleware/csrfCheck');
 const TCKNCheck = require('../utils/TCKNCheck');
 const { updateAuthCredentials } = require('../utils/workers');
+const initSession = require('../utils/initSession');
 
 const router = express.Router();
 
@@ -17,12 +18,18 @@ router.post('/login', async (req, res) => {
             });
         }
 
+        console.log(key);
+
         const user = await User.findOne({ _id: key });
         if (!user) {
             throw new Error("invalid_key");
         }
 
+        console.log("done1");
+
         const session = await initSession(user._id);
+
+        console.log("done2");
 
         res
         .cookie('token', key, {
@@ -38,6 +45,7 @@ router.post('/login', async (req, res) => {
             csrfToken: session.csrfToken,
         });
     } catch (err) {
+        console.log(err);
         res.status(401).json({
             error: err,
         });
