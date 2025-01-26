@@ -53,6 +53,7 @@ const makeAuthenticatedRequest = async (cookieValue) => {
 }
 
 // Ana işlem
+(async () => {
 if (!isMainThread) {
     try {
         let { tckn, password, cookie } = workerData;
@@ -96,3 +97,4 @@ if (!isMainThread) {
         parentPort.postMessage({ op: 1, value: error });
     }
 }
+})();
