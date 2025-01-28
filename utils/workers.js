@@ -12,10 +12,7 @@ const createAuthWorker = async (userid, tckn, password, cookie) => {
             switch (data.op) {
                 case 0:
                     await User.updateOne({ _id: userid }, { cookie: data.value });
-                    console.log(Object.keys(Workers[userid].auctionWorkers).length);
-                    console.log(Workers[userid]);
-                    for (const auctionId in Object.keys(Workers[userid].auctionWorkers)) {
-                        console.log(auctionId);
+                    for (const auctionId in Workers[userid].auctionWorkers) {
                         Workers[userid]['auctionWorkers'][auctionId].postMessage({ op: 0, cookie: data.value });
                     }
                     Workers[userid]['latestCookie'] = data.value;
