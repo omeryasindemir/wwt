@@ -16,7 +16,7 @@ const loginAndSaveSession = async (tc, password) => {
     });
 
     await page.waitForSelector('#tridField');
-    await page.type('#tridField', tc, { delay: 100 });
+    await page.type('#tridField', tc.toString(), { delay: 100 });
     await page.type('#egpField', password, { delay: 100 });
     await page.click('button[name="submitButton"]');
     await page.waitForNavigation({ waitUntil: 'networkidle2' });
