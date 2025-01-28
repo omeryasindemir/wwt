@@ -88,11 +88,15 @@ const placeBid = async (page, bidAmount) => {
     parentPort.postMessage({ op: 2, value: 'Sunucu yanıtı: ' + JSON.stringify(response) });
 };
 
-const waitforCookie = async () => {
-    while (currentJSessionId === '') {
+const waitforCookie = async (page) => {
+    while (true) {
+        await page.goto(listeningUrl, { waitUntil: 'networkidle2' });
+        if (page.url() === listeningUrl) {
+            return;
+        }
+        parentPort.postMessage({ op: 5 });
         await new Promise(resolve => setTimeout(resolve, 4000));
     }
-    return;
 };
 
 (async () => {
@@ -114,7 +118,7 @@ const waitforCookie = async () => {
             }
         });
 
-        await waitforCookie();
+        await waitforCookie(page);
 
         page.on('response', async (response) => {
             if (response.url() === "https://esatis.uyap.gov.tr/main/jsp/esatis/ihale_detay_bilgileri_brd.ajx" ||
@@ -123,8 +127,6 @@ const waitforCookie = async () => {
                 await updateAuctionData(responseBody);
             }
         });
-
-        await page.goto(listeningUrl, { waitUntil: 'networkidle2' });
 
         parentPort.postMessage({ op: 2, value: 'Dinleme başladı...' });
         const interval = setInterval(async () => {

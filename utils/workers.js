@@ -62,6 +62,9 @@ const createAuctionWorker = async (auctionid) => {
                     await Auction.updateOne({ _id: auctionid }, { isDone: true });
                     await deleteAuctionWorker(user._id, auctionid, data.value);
                     break;
+                case 5:
+                    Workers[user._id]['authWorker'].postMessage({ op: 0 });
+                    break;
             }
         } catch (error) {
             console.log(error);
