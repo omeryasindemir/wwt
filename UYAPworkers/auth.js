@@ -73,6 +73,7 @@ const makeAuthenticatedRequest = async (cookieValue) => {
                     if (!isAuthenticated) {
                         cookie = await loginAndSaveSession(tckn, password);
                         if (cookie) {
+                            console.log(cookie);
                             parentPort.postMessage({ op: 0, value: cookie });
                         }
                     }
@@ -85,7 +86,9 @@ const makeAuthenticatedRequest = async (cookieValue) => {
             parentPort.on('message', (data) => {
                 switch (data.op) {
                     case 0:
-                        parentPort.postMessage({ op: 0, value: cookie });
+                        if(cookie){
+                            parentPort.postMessage({ op: 0, value: cookie });
+                        }
                         break;
                     case 1:
                         tckn = data.tckn;

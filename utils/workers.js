@@ -9,6 +9,7 @@ const createAuthWorker = async (userid, tckn, password, cookie) => {
     const authWorker = new Worker(path.join(__dirname, '../UYAPworkers/auth.js'), { workerData: { tckn, password, cookie } });
     authWorker.on('message', async (data) => {
         try {
+            console.log(data);
             switch (data.op) {
                 case 0:
                     await User.updateOne({ _id: userid }, { cookie: data.value });

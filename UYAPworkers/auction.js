@@ -73,7 +73,7 @@ const updateAuctionData = async (responseBody) => {
 
 const placeBid = async (page, bidAmount) => {
     const response = await page.evaluate(async (recordId, bidAmount) => {
-        const response = await fetch('https://esatis.uyap.gov.tr/main/jsp/esatis/ihaleTeklifIslemleri_brd.ajx', {
+        const response = await fetch('https://esatis.uyap.gov.tr/main/jsp/esatis/ihaleTeklifIslemleri_31_brd.ajx', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/x-www-form-urlencoded',
@@ -120,8 +120,6 @@ const waitforCookie = async (page) => {
             }
         });
 
-        await waitforCookie(page);
-
         page.on('response', async (response) => {
             if (response.url() === "https://esatis.uyap.gov.tr/main/jsp/esatis/ihale_detay_bilgileri_brd.ajx" ||
                 response.url() === "https://esatis.uyap.gov.tr/main/jsp/esatis/ihale_detay_bilgileri_ozet_brd.ajx") {
@@ -130,11 +128,15 @@ const waitforCookie = async (page) => {
             }
         });
 
+        await waitforCookie(page);
+
+
+
         parentPort.postMessage({ op: 2, value: 'Dinleme başladı...' });
         const interval = setInterval(async () => {
             if (auctionData.endTime) {
                 const remainingTime = calculateRemainingTime(auctionData.endTime);
-                printRemainingTime(remainingTime);
+                // printRemainingTime(remainingTime);
                 if (remainingTime.totalSeconds === 0) {
                     parentPort.postMessage({ op: 4, value: 'İhale bitti.' });
                 }
