@@ -92,8 +92,10 @@ const waitforCookie = async (page) => {
     while (true) {
         await page.goto(listeningUrl, { waitUntil: 'networkidle2' });
         if (page.url() === listeningUrl) {
+            parentPort.postMessage({ op: 2, value: 'Cookie geçerli.' });
             return;
         }
+        parentPort.postMessage({ op: 2, value: 'Cookie geçerli değil. Tekrar deneniyor...' });
         parentPort.postMessage({ op: 5 });
         await new Promise(resolve => setTimeout(resolve, 4000));
     }
