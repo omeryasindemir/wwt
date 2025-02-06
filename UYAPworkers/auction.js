@@ -82,10 +82,15 @@ const placeBid = async (page, bidAmount) => {
         });
         return await response.text();
     }, recordId, bidAmount);
+    
+    const parsed = await parseXMLResponse(response);
 
-    lastPlacedBid = bidAmount; // Son verilen teklifi güncelle
-    parentPort.postMessage({ op: 2, value: 'Teklif gönderildi: ' + bidAmount });
-    parentPort.postMessage({ op: 2, value: 'Sunucu yanıtı: ' + JSON.stringify(response) });
+    if (parsed.hasOwnProperty('errorCode')) {
+        parentPort.postMessage({ op: 2, value: `Teklif verilirken hata oluştu: ${parsed['error']}` });
+    } else {
+        lastPlacedBid = bidAmount; // Son verilen teklifi güncelle
+        parentPort.postMessage({ op: 2, value: 'Teklif gönderildi: ' + bidAmount });
+    }
 };
 
 const waitforCookie = async (page) => {
