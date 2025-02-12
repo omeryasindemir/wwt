@@ -61,11 +61,14 @@ const createAuctionWorker = async (auctionid) => {
                     await deleteAuctionWorker(user._id, auctionid, data.value);
                     break;
                 case 4:
-                    await Auction.updateOne({ _id: auctionid }, { isDone: true });
-                    await deleteAuctionWorker(user._id, auctionid, data.value);
+                    await Auction.updateOne({ _id: auctionid }, { isDone: true, isWon: data.value.isWon });
+                    await deleteAuctionWorker(user._id, auctionid, data.value.reason);
                     break;
                 case 5:
                     Workers[user._id]['authWorker'].postMessage({ op: 0 });
+                    break;
+                case 6:
+                    await Auction.updateOne({ _id: auctionid }, { userOffer: data.value });
                     break;
             }
         } catch (error) {

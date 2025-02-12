@@ -61,7 +61,7 @@ const updateAuctionData = async (responseBody) => {
 
     if (auction.kayitID) {
         recordId = auction.kayitID;
-        parentPort.postMessage({ op: 2, value: 'Güncellenen Kayıt ID: ' + recordId });
+        parentPort.postMessage({ op: 2, value: `Güncellenen Kayıt ID: ${recordId}` });
     }
 
     if (auctionData.lastOffer + auctionData.minIncrement > maxPrice) {
@@ -84,10 +84,16 @@ const placeBid = async (page, bidAmount) => {
     }, recordId, bidAmount);
 
     if (parsed.hasOwnProperty('errorCode')) {
-        parentPort.postMessage({ op: 2, value: `Teklif verilirken hata oluştu: ${parsed['error']}` });
+        if (parsed.error === 'Teklif Süresi Henüz Başlamamıştır, Teklif Veremezsiniz!') {
+            const data = { reason: 'Teklif verilirken hata oluştu: İhale bitti.', isWon: (auctionData.lastOffer === lastPlacedBid) };
+            parentPort.postMessage({ op: 4, value: data });
+        } else {
+            parentPort.postMessage({ op: 2, value: `Teklif verilirken hata oluştu: ${parsed.error}` });
+        }
     } else {
         lastPlacedBid = bidAmount; // Son verilen teklifi güncelle
-        parentPort.postMessage({ op: 2, value: 'Teklif gönderildi: ' + bidAmount });
+        parentPort.postMessage({ op: 6, value: bidAmount });
+        parentPort.postMessage({ op: 2, value: `Teklif gönderildi: ${bidAmount}` });
     }
 };
 
@@ -142,14 +148,15 @@ const waitforCookie = async (page) => {
                 const remainingTime = calculateRemainingTime(auctionData.endTime);
                 // printRemainingTime(remainingTime);
                 if (remainingTime.totalSeconds === -5) {
-                    parentPort.postMessage({ op: 4, value: 'İhale bitti.' });
+                    const data = { reason: 'İhale bitti.', isWon: (auctionData.lastOffer === lastPlacedBid) };
+                    parentPort.postMessage({ op: 4, value: data });
                 }
 
                 if (remainingTime.totalSeconds <= 10) {
                     const nextBid = auctionData.lastOffer + auctionData.minIncrement;
 
                     if (auctionData.lastOffer === lastPlacedBid) {
-                        parentPort.postMessage({ op: 2, value: 'Son teklif bizim verdiğimiz teklif, tekrar teklif verilmiyor.' });
+                        //parentPort.postMessage({ op: 2, value: 'Son teklif bizim verdiğimiz teklif, tekrar teklif verilmiyor.' });
                     } else if (nextBid <= maxPrice) {
                         await placeBid(page, nextBid);
                     } else {

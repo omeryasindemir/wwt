@@ -5,6 +5,7 @@ const AuctionSchema = new mongoose.Schema({
     url: String,
     maxBid: Number,
     lastBid: Number,
+    userOffer: Number,
     endTime: Date,
     logs: [String],
     isStopped: {
@@ -14,6 +15,10 @@ const AuctionSchema = new mongoose.Schema({
     isDone: {
         type: Boolean,
         default: false
+    },
+    isWon: {
+        type: Boolean,
+        default: null
     }
 });
 
