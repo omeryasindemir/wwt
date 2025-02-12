@@ -91,6 +91,7 @@ const placeBid = async (page, bidAmount) => {
     }
 };
 
+
 const waitforCookie = async (page) => {
     while (true) {
         await page.goto(listeningUrl, { waitUntil: 'networkidle2' });
