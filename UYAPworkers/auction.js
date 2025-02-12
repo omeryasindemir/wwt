@@ -73,17 +73,15 @@ const updateAuctionData = async (responseBody) => {
 
 const placeBid = async (page, bidAmount) => {
     const response = await page.evaluate(async (recordId, bidAmount) => {
-        const response = await fetch('https://esatis.uyap.gov.tr/main/jsp/esatis/ihaleTeklifIslemleri_31_brd.ajx', {
+        const parsed = await fetch('https://esatis.uyap.gov.tr/main/jsp/esatis/ihaleTeklifIslemleri_31_brd.ajx', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/x-www-form-urlencoded',
             },
             body: `kayitId=${recordId}&teklifMiktari=${bidAmount}`,
         });
-        return await response.text();
+        return await response.json();
     }, recordId, bidAmount);
-    
-    const parsed = await parseXMLResponse(response);
 
     if (parsed.hasOwnProperty('errorCode')) {
         parentPort.postMessage({ op: 2, value: `Teklif verilirken hata oluştu: ${parsed['error']}` });
