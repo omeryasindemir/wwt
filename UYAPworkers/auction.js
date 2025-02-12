@@ -72,22 +72,31 @@ const updateAuctionData = async (responseBody) => {
 };
 
 const placeBid = async (page, bidAmount) => {
-    const response = await page.evaluate(async (recordId, bidAmount) => {
-        const parsed = await fetch('https://esatis.uyap.gov.tr/main/jsp/esatis/ihaleTeklifIslemleri_31_brd.ajx', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/x-www-form-urlencoded',
-            },
-            body: `kayitId=${recordId}&teklifMiktari=${bidAmount}`,
-        });
-        return await response.json();
-    }, recordId, bidAmount);
+    try {
+        const result = await page.evaluate(async (recordId, bidAmount) => {
+            try {
+                const response = await fetch('https://esatis.uyap.gov.tr/main/jsp/esatis/ihaleTeklifIslemleri_brd.ajx', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/x-www-form-urlencoded',
+                    },
+                    body: `kayitId=${recordId}&teklifMiktari=${bidAmount}`,
+                });
+                const data = await response.json();
+                return data;
+            } catch (error) {
+                return { errorCode: true, error: error.message };
+            }
+        }, recordId, bidAmount);
 
-    if (parsed.hasOwnProperty('errorCode')) {
-        parentPort.postMessage({ op: 2, value: `Teklif verilirken hata oluştu: ${parsed['error']}` });
-    } else {
-        lastPlacedBid = bidAmount; // Son verilen teklifi güncelle
-        parentPort.postMessage({ op: 2, value: 'Teklif gönderildi: ' + bidAmount });
+        if (result.hasOwnProperty('errorCode')) {
+            parentPort.postMessage({ op: 2, value: `Teklif verilirken hata oluştu: ${result.error}` });
+        } else {
+            lastPlacedBid = bidAmount;
+            parentPort.postMessage({ op: 2, value: 'Teklif gönderildi: ' + bidAmount });
+        }
+    } catch (error) {
+        parentPort.postMessage({ op: 2, value: `Teklif verme işlemi sırasında hata oluştu: ${error.message}` });
     }
 };
 
