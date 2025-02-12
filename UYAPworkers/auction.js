@@ -145,7 +145,7 @@ const waitforCookie = async (page) => {
                     parentPort.postMessage({ op: 4, value: 'İhale bitti.' });
                 }
 
-                if (remainingTime.totalSeconds <= 5) {
+                if (remainingTime.totalSeconds <= 10) {
                     const nextBid = auctionData.lastOffer + auctionData.minIncrement;
 
                     if (auctionData.lastOffer === lastPlacedBid) {
