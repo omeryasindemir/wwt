@@ -35,7 +35,7 @@ const updateSessionId = async (page, newSessionId) => {
 const calculateRemainingTime = (endTime) => {
     const now = new Date();
     const end = new Date(endTime);
-    const diff = Math.max(0, end - now);
+    const diff = Math.max(-5, end - now);
 
     const days = Math.floor(diff / (1000 * 60 * 60 * 24));
     const hours = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
@@ -141,7 +141,7 @@ const waitforCookie = async (page) => {
             if (auctionData.endTime) {
                 const remainingTime = calculateRemainingTime(auctionData.endTime);
                 // printRemainingTime(remainingTime);
-                if (remainingTime.totalSeconds === 0) {
+                if (remainingTime.totalSeconds === -5) {
                     parentPort.postMessage({ op: 4, value: 'İhale bitti.' });
                 }
 
