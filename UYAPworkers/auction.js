@@ -50,37 +50,59 @@ const printRemainingTime = (remainingTime) => {
 };
 
 const updateAuctionData = async (responseBody) => {
-    const parsed = await parseXMLResponse(responseBody);
-    const auction = parsed.root['object-array'].IhaleTumBilgiDVO;
+    try {
+        const parsed = await parseXMLResponse(responseBody);
+        
+        // XML yapısını kontrol et
+        if (!parsed?.root?.['object-array']?.IhaleTumBilgiDVO) {
+            parentPort.postMessage({ 
+                op: 2, 
+                value: 'Geçersiz ihale verisi alındı. XML yapısı: ' + JSON.stringify(parsed) 
+            });
+            return;
+        }
 
-    auctionData = {
-        minIncrement: parseFloat(auction.minTeklifArtisMiktari),
-        lastOffer: parseFloat(auction.sonTeklif),
-        endTime: new Date(auction.ihaleBitisZamani),
-    };
+        const auction = parsed.root['object-array'].IhaleTumBilgiDVO;
 
-    if (auction.kayitID) {
-        recordId = auction.kayitID;
-        parentPort.postMessage({ op: 2, value: `Güncellenen Kayıt ID: ${recordId}` });
+        auctionData = {
+            minIncrement: parseFloat(auction.minTeklifArtisMiktari),
+            lastOffer: parseFloat(auction.sonTeklif),
+            endTime: new Date(auction.ihaleBitisZamani),
+        };
+
+        if (auction.kayitID) {
+            recordId = auction.kayitID;
+            parentPort.postMessage({ op: 2, value: `Güncellenen Kayıt ID: ${recordId}` });
+        }
+
+        if (auctionData.lastOffer + auctionData.minIncrement > maxPrice) {
+            parentPort.postMessage({ op: 3, value: 'Maksimum fiyat aşıldı, dinleme durduruluyor.' });
+        }
+
+        parentPort.postMessage({ op: 0, value: auctionData });
+    } catch (error) {
+        parentPort.postMessage({ 
+            op: 2, 
+            value: `İhale verisi güncellenirken hata oluştu: ${error.message}\nYanıt: ${responseBody}` 
+        });
     }
-
-    if (auctionData.lastOffer + auctionData.minIncrement > maxPrice) {
-        parentPort.postMessage({ op: 3, value: 'Maksimum fiyat aşıldı, dinleme durduruluyor.' });
-    }
-
-    parentPort.postMessage({ op: 0, value: auctionData });
 };
 
 const placeBid = async (page, bidAmount) => {
     const parsed = await page.evaluate(async (recordId, bidAmount) => {
-        const response = await fetch('https://esatis.uyap.gov.tr/main/jsp/esatis/ihaleTeklifIslemleri_31_brd.ajx', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/x-www-form-urlencoded',
-            },
-            body: `kayitId=${recordId}&teklifMiktari=${bidAmount}`,
-        });
-        return await response.json();
+        try {
+            const response = await fetch('https://esatis.uyap.gov.tr/main/jsp/esatis/ihaleTeklifIslemleri_brd.ajx', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/x-www-form-urlencoded',
+                },
+                body: `kayitId=${recordId}&teklifMiktari=${bidAmount}`
+            });
+            const data = await response.text();
+            return JSON.parse(data);
+        } catch (error) {
+            return { errorCode: true, error: error.message };
+        }
     }, recordId, bidAmount);
 
     if (parsed.hasOwnProperty('errorCode')) {
@@ -90,13 +112,14 @@ const placeBid = async (page, bidAmount) => {
         } else {
             parentPort.postMessage({ op: 2, value: `Teklif verilirken hata oluştu: ${parsed.error}` });
         }
-    } else {
-        lastPlacedBid = bidAmount; // Son verilen teklifi güncelle
+    } else if (parsed.type === 'success') {
+        lastPlacedBid = bidAmount;
         parentPort.postMessage({ op: 6, value: bidAmount });
         parentPort.postMessage({ op: 2, value: `Teklif gönderildi: ${bidAmount}` });
+    } else {
+        parentPort.postMessage({ op: 2, value: `Beklenmeyen yanıt: ${JSON.stringify(parsed)}` });
     }
 };
-
 
 const waitforCookie = async (page) => {
     while (true) {
@@ -139,8 +162,6 @@ const waitforCookie = async (page) => {
         });
 
         await waitforCookie(page);
-
-
 
         parentPort.postMessage({ op: 2, value: 'Dinleme başladı...' });
         const interval = setInterval(async () => {
