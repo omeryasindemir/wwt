@@ -181,7 +181,7 @@ const waitforCookie = async (page) => {
             if (auctionData.endTime) {
                 const remainingTime = calculateRemainingTime(auctionData.endTime);
                 
-                // Son 10 saniye moduna giriş
+                // Son 10 saniye moduna giriş veya çıkış
                 if (remainingTime.totalSeconds <= 10 && !isInLastTenSeconds) {
                     isInLastTenSeconds = true;
                     parentPort.postMessage({ op: 2, value: 'Son 10 saniye moduna girildi.' });
@@ -193,6 +193,9 @@ const waitforCookie = async (page) => {
                             await placeBid(page, nextBid);
                         }
                     }
+                } else if (remainingTime.totalSeconds > 10 && isInLastTenSeconds) {
+                    isInLastTenSeconds = false;
+                    parentPort.postMessage({ op: 2, value: 'Son 10 saniye modundan çıkıldı.' });
                 }
 
                 if (remainingTime.totalSeconds === -5) {
