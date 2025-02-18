@@ -7,6 +7,7 @@ let recordId = ''; // Kayıt ID'sini saklamak için
 let lastPlacedBid = null; // Son verilen teklif
 
 let listeningUrl = '', maxPrice = 0;
+let isInLastTenSeconds = false; // 10 saniye modunu takip etmek için
 
 const parseXMLResponse = (xml) => {
     return new Promise((resolve, reject) => {
@@ -53,7 +54,6 @@ const updateAuctionData = async (responseBody) => {
     try {
         const parsed = await parseXMLResponse(responseBody);
         
-        // XML yapısını kontrol et
         if (!parsed?.root?.['object-array']?.IhaleTumBilgiDVO) {
             parentPort.postMessage({ 
                 op: 2, 
@@ -63,10 +63,21 @@ const updateAuctionData = async (responseBody) => {
         }
 
         const auction = parsed.root['object-array'].IhaleTumBilgiDVO;
+        const newLastOffer = parseFloat(auction.sonTeklif);
+
+        // Eğer son 10 saniye modundaysak ve ihale bizde değilse hemen teklif ver
+        if (isInLastTenSeconds && newLastOffer !== lastPlacedBid) {
+            const nextBid = newLastOffer + parseFloat(auction.minTeklifArtisMiktari);
+            if (nextBid <= maxPrice) {
+                await placeBid(global.page, nextBid);
+            } else {
+                parentPort.postMessage({ op: 3, value: 'Maksimum fiyat aşıldı, dinleme durduruluyor.' });
+            }
+        }
 
         auctionData = {
             minIncrement: parseFloat(auction.minTeklifArtisMiktari),
-            lastOffer: parseFloat(auction.sonTeklif),
+            lastOffer: newLastOffer,
             endTime: new Date(auction.ihaleBitisZamani),
         };
 
@@ -141,6 +152,8 @@ const waitforCookie = async (page) => {
 
         const browser = await puppeteer.launch({ headless: true });
         const page = await browser.newPage();
+        // Page nesnesini global olarak sakla
+        global.page = page;
 
         parentPort.on('message', async (data) => {
             switch (data.op) {
@@ -167,22 +180,24 @@ const waitforCookie = async (page) => {
         const interval = setInterval(async () => {
             if (auctionData.endTime) {
                 const remainingTime = calculateRemainingTime(auctionData.endTime);
-                // printRemainingTime(remainingTime);
+                
+                // Son 10 saniye moduna giriş
+                if (remainingTime.totalSeconds <= 10 && !isInLastTenSeconds) {
+                    isInLastTenSeconds = true;
+                    parentPort.postMessage({ op: 2, value: 'Son 10 saniye moduna girildi.' });
+                    
+                    // Son 10 saniyeye girildiğinde eğer ihale bizde değilse hemen teklif ver
+                    if (auctionData.lastOffer !== lastPlacedBid) {
+                        const nextBid = auctionData.lastOffer + auctionData.minIncrement;
+                        if (nextBid <= maxPrice) {
+                            await placeBid(page, nextBid);
+                        }
+                    }
+                }
+
                 if (remainingTime.totalSeconds === -5) {
                     const data = { reason: 'İhale bitti.', isWon: (auctionData.lastOffer === lastPlacedBid) };
                     parentPort.postMessage({ op: 4, value: data });
-                }
-
-                if (remainingTime.totalSeconds <= 10) {
-                    const nextBid = auctionData.lastOffer + auctionData.minIncrement;
-
-                    if (auctionData.lastOffer === lastPlacedBid) {
-                        //parentPort.postMessage({ op: 2, value: 'Son teklif bizim verdiğimiz teklif, tekrar teklif verilmiyor.' });
-                    } else if (nextBid <= maxPrice) {
-                        await placeBid(page, nextBid);
-                    } else {
-                        parentPort.postMessage({ op: 3, value: 'Maksimum fiyat aşıldı, dinleme durduruluyor.' });
-                    }
                 }
             }
         }, 1000);
