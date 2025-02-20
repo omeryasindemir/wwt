@@ -9,7 +9,7 @@ const auctionRouter = require('./routes/auction');
 const { initWorkers } = require('./utils/workers');
 const logger = require('morgan');
 
-mongoose.connect("mongodb://127.0.0.1:27017/wwt").then(
+mongoose.connect("mongodb+srv://omeryasind7:8YJNfQxvP7JvQDSs@cluster0.iu2ms.mongodb.net/wwt").then(
     async () => {
         console.log('Connected to mongoDB');
         const admin = await User.findOne({isAdmin: true});
