@@ -10,7 +10,7 @@ const router = express.Router();
 
 router.post('/new', authenticate, csrfCheck, async (req, res) => {
     try {
-        const { url, maxBid } = req.body;
+        const { name, url, maxBid } = req.body;
         const auctionUrl = url.trim();
 
         const isValidUrl = (string) => {
@@ -35,12 +35,18 @@ router.post('/new', authenticate, csrfCheck, async (req, res) => {
             });
         }
 
+        if (typeof name !== 'string') {
+            return res.status(400).json({
+                error: 'İsim geçersiz'
+            });
+        }
+
         const user = await User.findOne({ _id: req.session.userId });
         if (user.credit < 1) {
             throw new Error('Kredi yetersiz');
         }
 
-        const auction = new Auction({ userId: req.session.userId, url: auctionUrl, maxBid });
+        const auction = new Auction({ userId: req.session.userId, name, url: auctionUrl, maxBid });
         const persistedAuction = await auction.save();
 
         user.credit -= 1;
@@ -85,12 +91,25 @@ router.get('/get/:auctionid', authenticate, csrfCheck, async (req, res) => {
 router.post('/manage/:auctionid', authenticate, csrfCheck, async (req, res) => {
     try {
         const auctionid = req.params.auctionid;
-        const { maxBid } = req.body;
+        const {name, maxBid } = req.body;
         const auction = await Auction.findOne({ _id: auctionid, userId: req.session.userId });
         if (!auction) {
             return res.status(400).json({
                 error: 'İhale geçersiz'
             });
+        }
+
+        var updates = 0;
+
+        if (auction.name !== name) {
+            if (typeof name !== 'string') {
+                return res.status(400).json({
+                    error: 'İsim geçersiz'
+                });
+            }
+
+            auction.name = name;
+            updates++;
         }
 
         if (auction.maxBid !== maxBid) {
@@ -108,6 +127,10 @@ router.post('/manage/:auctionid', authenticate, csrfCheck, async (req, res) => {
                 await updateAuctionDetails(req.session.userId, auction._id, maxBid);
             }
 
+            updates++;
+        }
+
+        if (updates > 0) {
             await auction.save();
         }
 

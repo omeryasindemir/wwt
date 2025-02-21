@@ -2,6 +2,7 @@ const mongoose = require('mongoose');
 
 const AuctionSchema = new mongoose.Schema({
     userId: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
+    name: String,
     url: String,
     maxBid: Number,
     lastBid: Number,
