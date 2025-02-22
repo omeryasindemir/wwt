@@ -150,7 +150,7 @@ const waitforCookie = async (page) => {
         listeningUrl = workerData.url;
         maxPrice = workerData.maxBid;
 
-        const browser = await puppeteer.launch({ headless: true });
+        const browser = await puppeteer.launch({ headless: true, args: ['--no-sandbox'] });
         const page = await browser.newPage();
         // Page nesnesini global olarak sakla
         global.page = page;
