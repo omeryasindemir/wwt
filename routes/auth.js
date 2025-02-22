@@ -36,7 +36,7 @@ router.post('/login', async (req, res) => {
             httpOnly: false,
             sameSite: true,
             maxAge: 1209600000,
-            secure: true,
+            secure: false,
         })
         .status(user.tckn === null ? 301 : 200)
         .json({

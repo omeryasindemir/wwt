@@ -29,7 +29,7 @@ mongoose.connect("mongodb+srv://omeryasind7:8YJNfQxvP7JvQDSs@cluster0.iu2ms.mong
 const app = express();
 
 app.use(cors({
-    origin: "http://localhost:3000",
+    origin: "http://212.68.34.55",
     credentials: true
 }));
 app.use(logger('dev'));
@@ -37,9 +37,9 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
 app.use(cookieParser());
 
-app.use('/auth', authRouter);
-app.use('/admin', adminRouter);
-app.use('/auction', auctionRouter);
+app.use('/api/auth', authRouter);
+app.use('/api/admin', adminRouter);
+app.use('/api/auction', auctionRouter);
 
 app.listen(3001, () => {
     console.log(`Server running on port 3001`);
