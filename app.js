@@ -9,7 +9,7 @@ const auctionRouter = require('./routes/auction');
 const { initWorkers } = require('./utils/workers');
 const logger = require('morgan');
 
-mongoose.connect("mongodb+srv://omeryasind7:8YJNfQxvP7JvQDSs@cluster0.iu2ms.mongodb.net/wwt").then(
+mongoose.connect("mongodb://127.0.0.1:27017/wwt").then(
     async () => {
         console.log('Connected to mongoDB');
         const admin = await User.findOne({isAdmin: true});
@@ -29,7 +29,7 @@ mongoose.connect("mongodb+srv://omeryasind7:8YJNfQxvP7JvQDSs@cluster0.iu2ms.mong
 const app = express();
 
 app.use(cors({
-    origin: "http://212.68.34.55",
+    origin: "http://localhost:3000",
     credentials: true
 }));
 app.use(logger('dev'));
@@ -37,9 +37,9 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
 app.use(cookieParser());
 
-app.use('/api/auth', authRouter);
-app.use('/api/admin', adminRouter);
-app.use('/api/auction', auctionRouter);
+app.use('/auth', authRouter);
+app.use('/admin', adminRouter);
+app.use('/auction', auctionRouter);
 
 app.listen(3001, () => {
     console.log(`Server running on port 3001`);
