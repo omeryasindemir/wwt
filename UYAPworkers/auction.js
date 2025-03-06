@@ -7,7 +7,7 @@ let recordId = ''; // Kayıt ID'sini saklamak için
 let lastPlacedBid = null; // Son verilen teklif
 
 let listeningUrl = '', maxPrice = 0;
-let isInLastTenSeconds = false; // 10 saniye modunu takip etmek için
+let isInLastTwentySeconds = false; // 20 saniye modunu takip etmek için
 
 const parseXMLResponse = (xml) => {
     return new Promise((resolve, reject) => {
@@ -66,7 +66,7 @@ const updateAuctionData = async (responseBody) => {
         const newLastOffer = parseFloat(auction.sonTeklif);
 
         // Eğer son 10 saniye modundaysak ve ihale bizde değilse hemen teklif ver
-        if (isInLastTenSeconds && newLastOffer !== lastPlacedBid) {
+        if (isInLastTwentySeconds && newLastOffer !== lastPlacedBid) {
             const nextBid = newLastOffer + parseFloat(auction.minTeklifArtisMiktari);
             if (nextBid <= maxPrice) {
                 await placeBid(global.page, nextBid);
@@ -99,7 +99,7 @@ const updateAuctionData = async (responseBody) => {
     }
 };
 
-const placeBid = async (page, bidAmount) => {
+const placeBid = async (page, bidAmount, retryCount = 0) => {
     const parsed = await page.evaluate(async (recordId, bidAmount) => {
         try {
             const response = await fetch('https://esatis.uyap.gov.tr/main/jsp/esatis/ihaleTeklifIslemleri_brd.ajx', {
@@ -122,6 +122,15 @@ const placeBid = async (page, bidAmount) => {
             parentPort.postMessage({ op: 4, value: data });
         } else {
             parentPort.postMessage({ op: 2, value: `Teklif verilirken hata oluştu: ${parsed.error}` });
+            
+            // Son 20 saniye içindeyse ve maksimum fiyat aşılmadıysa tekrar dene
+            if (isInLastTwentySeconds && bidAmount <= maxPrice) {
+                const nextBidAmount = bidAmount + auctionData.minIncrement;
+                if (nextBidAmount <= maxPrice) {
+                    parentPort.postMessage({ op: 2, value: `Teklif başarısız oldu, ${nextBidAmount} ile tekrar deneniyor...` });
+                    await placeBid(page, nextBidAmount, retryCount + 1);
+                }
+            }
         }
     } else if (parsed.type === 'success') {
         lastPlacedBid = bidAmount;
@@ -129,6 +138,15 @@ const placeBid = async (page, bidAmount) => {
         parentPort.postMessage({ op: 2, value: `Teklif gönderildi: ${bidAmount}` });
     } else {
         parentPort.postMessage({ op: 2, value: `Beklenmeyen yanıt: ${JSON.stringify(parsed)}` });
+        
+        // Son 20 saniye içindeyse ve maksimum fiyat aşılmadıysa tekrar dene
+        if (isInLastTwentySeconds && bidAmount <= maxPrice) {
+            const nextBidAmount = bidAmount + auctionData.minIncrement;
+            if (nextBidAmount <= maxPrice) {
+                parentPort.postMessage({ op: 2, value: `Teklif başarısız oldu, ${nextBidAmount} ile tekrar deneniyor...` });
+                await placeBid(page, nextBidAmount, retryCount + 1);
+            }
+        }
     }
 };
 
@@ -181,21 +199,21 @@ const waitforCookie = async (page) => {
             if (auctionData.endTime) {
                 const remainingTime = calculateRemainingTime(auctionData.endTime);
                 
-                // Son 10 saniye moduna giriş veya çıkış
-                if (remainingTime.totalSeconds <= 10 && !isInLastTenSeconds) {
-                    isInLastTenSeconds = true;
-                    parentPort.postMessage({ op: 2, value: 'Son 10 saniye moduna girildi.' });
+                // Son 20 saniye moduna giriş veya çıkış
+                if (remainingTime.totalSeconds <= 20 && !isInLastTwentySeconds) {
+                    isInLastTwentySeconds = true;
+                    parentPort.postMessage({ op: 2, value: 'Son 20 saniye moduna girildi.' });
                     
-                    // Son 10 saniyeye girildiğinde eğer ihale bizde değilse hemen teklif ver
+                    // Son 20 saniyeye girildiğinde eğer ihale bizde değilse hemen teklif ver
                     if (auctionData.lastOffer !== lastPlacedBid) {
                         const nextBid = auctionData.lastOffer + auctionData.minIncrement;
                         if (nextBid <= maxPrice) {
                             await placeBid(page, nextBid);
                         }
                     }
-                } else if (remainingTime.totalSeconds > 10 && isInLastTenSeconds) {
-                    isInLastTenSeconds = false;
-                    parentPort.postMessage({ op: 2, value: 'Son 10 saniye modundan çıkıldı.' });
+                } else if (remainingTime.totalSeconds > 20 && isInLastTwentySeconds) {
+                    isInLastTwentySeconds = false;
+                    parentPort.postMessage({ op: 2, value: 'Son 20 saniye modundan çıkıldı.' });
                 }
 
                 if (remainingTime.totalSeconds === -5) {
