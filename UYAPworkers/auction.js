@@ -65,9 +65,13 @@ const updateAuctionData = async (responseBody) => {
         const auction = parsed.root['object-array'].IhaleTumBilgiDVO;
         const newLastOffer = parseFloat(auction.sonTeklif);
 
+        // Minimum artış miktarını bir üst tam sayıya yuvarlama
+        const minIncrementRaw = parseFloat(auction.minTeklifArtisMiktari);
+        const minIncrementRounded = Math.ceil(minIncrementRaw);
+
         // Eğer son 10 saniye modundaysak ve ihale bizde değilse hemen teklif ver
         if (isInLastTwentySeconds && newLastOffer !== lastPlacedBid) {
-            const nextBid = newLastOffer + parseFloat(auction.minTeklifArtisMiktari);
+            const nextBid = newLastOffer + minIncrementRounded;
             if (nextBid <= maxPrice) {
                 await placeBid(global.page, nextBid);
             } else {
@@ -76,7 +80,7 @@ const updateAuctionData = async (responseBody) => {
         }
 
         auctionData = {
-            minIncrement: parseFloat(auction.minTeklifArtisMiktari),
+            minIncrement: minIncrementRounded, // Yuvarlanmış değeri kullan
             lastOffer: newLastOffer,
             endTime: new Date(auction.ihaleBitisZamani),
         };
