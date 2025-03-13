@@ -191,8 +191,23 @@ const waitforCookie = async (page) => {
         page.on('response', async (response) => {
             if (response.url() === "https://esatis.uyap.gov.tr/main/jsp/esatis/ihale_detay_bilgileri_brd.ajx" ||
                 response.url() === "https://esatis.uyap.gov.tr/main/jsp/esatis/ihale_detay_bilgileri_ozet_brd.ajx") {
-                const responseBody = await response.text();
-                await updateAuctionData(responseBody);
+                try {
+                    // Response text'ini almaya çalış
+                    const responseBody = await response.text().catch(err => {
+                        // Eğer body alınamazsa (preflight request vs.) sessizce devam et
+                        return null;
+                    });
+
+                    // Eğer responseBody alınabildiyse güncelle
+                    if (responseBody) {
+                        await updateAuctionData(responseBody);
+                    }
+                } catch (error) {
+                    parentPort.postMessage({ 
+                        op: 2, 
+                        value: `Response işlenirken hata oluştu: ${error.message}` 
+                    });
+                }
             }
         });
 
