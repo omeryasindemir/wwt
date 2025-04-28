@@ -7,7 +7,7 @@ let recordId = ''; // Kayıt ID'sini saklamak için
 let lastPlacedBid = null; // Son verilen teklif
 
 let listeningUrl = '', maxPrice = 0;
-let isInLastTwentySeconds = false; // 20 saniye modunu takip etmek için
+let isInLastTwentySeconds = false; // 5 saniye modunu takip etmek için
 
 const parseXMLResponse = (xml) => {
     return new Promise((resolve, reject) => {
@@ -127,7 +127,7 @@ const placeBid = async (page, bidAmount, retryCount = 0) => {
         } else {
             parentPort.postMessage({ op: 2, value: `Teklif verilirken hata oluştu: ${parsed.error}` });
             
-            // Son 20 saniye içindeyse ve maksimum fiyat aşılmadıysa tekrar dene
+            // Son 5 saniye içindeyse ve maksimum fiyat aşılmadıysa tekrar dene
             if (isInLastTwentySeconds && bidAmount <= maxPrice) {
                 const nextBidAmount = bidAmount + auctionData.minIncrement;
                 if (nextBidAmount <= maxPrice) {
@@ -143,7 +143,7 @@ const placeBid = async (page, bidAmount, retryCount = 0) => {
     } else {
         parentPort.postMessage({ op: 2, value: `Beklenmeyen yanıt: ${JSON.stringify(parsed)}` });
         
-        // Son 20 saniye içindeyse ve maksimum fiyat aşılmadıysa tekrar dene
+        // Son 5 saniye içindeyse ve maksimum fiyat aşılmadıysa tekrar dene
         if (isInLastTwentySeconds && bidAmount <= maxPrice) {
             const nextBidAmount = bidAmount + auctionData.minIncrement;
             if (nextBidAmount <= maxPrice) {
@@ -218,21 +218,21 @@ const waitforCookie = async (page) => {
             if (auctionData.endTime) {
                 const remainingTime = calculateRemainingTime(auctionData.endTime);
                 
-                // Son 20 saniye moduna giriş veya çıkış
-                if (remainingTime.totalSeconds <= 20 && !isInLastTwentySeconds) {
+                // Son 5 saniye moduna giriş veya çıkış
+                if (remainingTime.totalSeconds <= 5 && !isInLastTwentySeconds) {
                     isInLastTwentySeconds = true;
-                    parentPort.postMessage({ op: 2, value: 'Son 20 saniye moduna girildi.' });
+                    parentPort.postMessage({ op: 2, value: 'Son 5 saniye moduna girildi.' });
                     
-                    // Son 20 saniyeye girildiğinde eğer ihale bizde değilse hemen teklif ver
+                    // Son 5 saniyeye girildiğinde eğer ihale bizde değilse hemen teklif ver
                     if (auctionData.lastOffer !== lastPlacedBid) {
                         const nextBid = auctionData.lastOffer + auctionData.minIncrement;
                         if (nextBid <= maxPrice) {
                             await placeBid(page, nextBid);
                         }
                     }
-                } else if (remainingTime.totalSeconds > 20 && isInLastTwentySeconds) {
+                } else if (remainingTime.totalSeconds > 5 && isInLastTwentySeconds) {
                     isInLastTwentySeconds = false;
-                    parentPort.postMessage({ op: 2, value: 'Son 20 saniye modundan çıkıldı.' });
+                    parentPort.postMessage({ op: 2, value: 'Son 5 saniye modundan çıkıldı.' });
                 }
 
                 if (remainingTime.totalSeconds === -5) {
