@@ -33,10 +33,10 @@ router.post('/login', async (req, res) => {
 
         res
         .cookie('token', session.token, {
-            httpOnly: false,
-            sameSite: true,
+            httpOnly: true,
+            sameSite: "None",
             maxAge: 1209600000,
-            secure: false,
+            secure: true
         })
         .status(user.tckn === null ? 301 : 200)
         .json({

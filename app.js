@@ -29,7 +29,7 @@ mongoose.connect("mongodb://127.0.0.1:27017/wwt").then(
 const app = express();
 
 app.use(cors({
-    origin: "http://localhost:3000",
+    origin: "https://www.winwiththat.com",
     credentials: true
 }));
 app.use(logger('dev'));
